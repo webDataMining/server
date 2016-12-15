@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="WebServers">
+    <option name="servers">
+      <webServer id="9dd28a33-2a1b-4f49-9fae-5ad3a3bb41ad" name="Aliyun" url="http://fanzhikang.cn">
+        <fileTransfer host="fanzhikang.cn" port="22" rootFolder="/var/www/html/search" accessType="SFTP">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" />
+          </advancedOptions>
+          <option name="port" value="22" />
+        </fileTransfer>
+      </webServer>
+    </option>
+  </component>
+</project>
