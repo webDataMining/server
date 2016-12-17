@@ -31,7 +31,7 @@ if ($range == "online") {
     $recommend_answer = $html->find("div[class=op_exactqa_s_answer]", 0)->plaintext;
     if (strlen($recommend_answer) > 0) {
         $recommend_answer = preg_replace("((^\s*)|(\s*$))", "", $recommend_answer);
-        array_push($result["recommends"], array("answer" => $recommend_answer, "reliability" => "1"));
+        array_push($result["recommends"], array("answer" => html_entity_decode($recommend_answer), "reliability" => "1"));
     }
 
     $baidu_zhidao = request_get("https://zhidao.baidu.com/search", array("word" => $text));
@@ -40,7 +40,7 @@ if ($range == "online") {
         $question = $element->find("dt[class=dt mb-4 line]", 0)->plaintext;
         $answer = $element->find("dd[class=dd answer]", 0)->plaintext;
         $answer = preg_replace("(^ 推荐答案|^答：|\[详细\] $)", "", $answer);
-        array_push($result["results"], array("title" => $question, "text" => $answer));
+        array_push($result["results"], array("title" => html_entity_decode($question), "text" => html_entity_decode($answer)));
     }
 
     $bing_search = request_get("http://cn.bing.com/search", array("q" => $text));
@@ -49,7 +49,7 @@ if ($range == "online") {
         $title = $element->find("h2", 0)->plaintext;
         $text = $element->find("div[class=b_caption]", 0)->find("p", 0)->plaintext;
         if (strlen($title) > 0 && strlen($text) > 0) {
-            array_push($result["results"], array("title" => $title, "text" => $text));
+            array_push($result["results"], array("title" => html_entity_decode($title), "text" => html_entity_decode($text)));
         }
     }
 } else if ($range == "local") {
