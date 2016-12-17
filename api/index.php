@@ -55,14 +55,12 @@ if ($range == "online") {
 } else if ($range == "local") {
     $search_title = strlen($title) > 0;
     $solr = get_wiki($title, $text, 30);
-    $redirect_regex = "(^#(REDIRECT|redirect|重定向))";
+    $redirect_regex = "((?i)^#(redirect|重定向))";
     $processed_title = array();
     foreach ($solr as $doc) {
         $doc_title = $doc["title"];
         $doc_text = $doc["text"];
-        if ($processed_title[$doc_title]) {
-            continue;
-        }
+
         if (preg_match($redirect_regex, $doc_text) > 0) {
             $doc_text = preg_replace($redirect_regex, "", $doc_text);
             $new_title = process_wiki($doc_text)["text"];
@@ -73,12 +71,14 @@ if ($range == "online") {
             $doc_title = $new_solr[0]["title"];
             $doc_text = $new_solr[0]["text"];
         }
-
-        if (preg_match("(^(Wikipedia|Portal|Template):)", $doc_title)) {
+        if ($processed_title[$doc_title]) {
+            continue;
+        }
+        if (preg_match("((?i)^(wikipedia|portal|template|category):)", $doc_title)) {
             continue;
         }
 
-        array_push($processed_title, $doc_title);
+        $processed_title[$doc_title] = true;
         array_push($result["results"], process_wiki($doc_text, $doc_title));
         if (count($result) >= ($search_title ? 5 : 10)) {
             break;
@@ -109,7 +109,7 @@ function process_wiki($text, $title = null) {
     foreach ($parse_raw["sections"] as $section) {
         $section_title = $section["title"];
         $section_text = $section["text"];
-        if (preg_match("(参考文献|外部链接)", $section_title)) {
+        if (preg_match("(参考|参考(文献|资料)|注释|外部(链接|连接))", $section_title)) {
             continue;
         }
         if (strlen($section_title) > 0) {
@@ -140,8 +140,8 @@ function recursive_extract_wiki_text($item) {
         $text = $item;
         $text = preg_replace("(\[wiki=[a-zA-Z0-9]{32}\]|\[/wiki\])", "", $text);
         $text = preg_replace("(\[url=.*?\]|\[/url\])", "", $text);
-        $text = preg_replace("(\[\[(Category|File|Image):.*?\]\])", "", $text);
-        $text = preg_replace("(<br />|\*)", "", $text);
+        $text = preg_replace("((?i)\[\[(category|file|image):.*?\]\])", "", $text);
+        $text = preg_replace("(<br {0,1}/>|\*)", "", $text);
         return $text;
     }
 }
