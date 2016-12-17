@@ -18,7 +18,7 @@
 
 ###### 参数
 
-* `range` 查询范围，取 `online` 或者 `local`，`online` 从百度，百度知道和bing上搜索，`local` 从本地solr搜中文维基百科
+* `range` 查询范围，取 `online` 或者 `local`，`online` 从百度，搜狗，百度知道和bing上搜索，`local` 从本地solr搜中文维基百科
 * `title` 匹配词条标题，仅在本地查询需要，优先级高于 `text`，返回前5个词条，不能超过50字节
 * `text` 问题全文，返回前10个词条，不能超过200字节
 
