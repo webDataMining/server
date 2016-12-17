@@ -36,10 +36,13 @@ if ($range == "online") {
 
     $sogou_search = request_get("https://www.sogou.com/web", array("query" => $text));
     $html = str_get_html($sogou_search);
-    $recommend_answer = $html->find("div[class=proInfoBox]", 0)->find("h4", 0)->plaintext;
-    if (strlen($recommend_answer) > 0) {
-        $recommend_answer = preg_replace("((^\s*)|(\s*$))", "", $recommend_answer);
-        array_push($result["recommends"], array("answer" => html_entity_decode($recommend_answer), "reliability" => "0.99"));
+    $answer_box = $html->find("div[class=proInfoBox]", 0);
+    if ($answer_box) {
+        $recommend_answer = $answer_box->find("h4", 0)->plaintext;
+        if (strlen($recommend_answer) > 0) {
+            $recommend_answer = preg_replace("((^\s*)|(\s*$))", "", $recommend_answer);
+            array_push($result["recommends"], array("answer" => html_entity_decode($recommend_answer), "reliability" => "0.99"));
+        }
     }
 
     $baidu_zhidao = request_get("https://zhidao.baidu.com/search", array("word" => $text));
