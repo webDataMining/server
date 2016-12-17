@@ -24,15 +24,23 @@ if (!($range == "online" || $range == "local")) {
     report_error(ERROR_ILLEGAL_PARAMETER);
 }
 
-$result = array();
+$result = array("recommends" => array(), "results" => array());
 if ($range == "online") {
+    $baidu_search = request_get("http://www.baidu.com/s", array("wd" => $text));
+    $html = str_get_html($baidu_search);
+    $recommend_answer = $html->find("div[class=op_exactqa_s_answer]", 0)->plaintext;
+    if (strlen($recommend_answer) > 0) {
+        $recommend_answer = preg_replace("((^\s*)|(\s*$))", "", $recommend_answer);
+        array_push($result["recommends"], array("answer" => $recommend_answer, "reliability" => "1"));
+    }
+
     $baidu_zhidao = request_get("https://zhidao.baidu.com/search", array("word" => $text));
     $html = str_get_html($baidu_zhidao);
     foreach($html->find("dl[class=dl]") as $element) {
         $question = $element->find("dt[class=dt mb-4 line]", 0)->plaintext;
         $answer = $element->find("dd[class=dd answer]", 0)->plaintext;
         $answer = preg_replace("(^ 推荐答案|^答：|\[详细\] $)", "", $answer);
-        array_push($result, array("title" => $question, "text" => $answer));
+        array_push($result["results"], array("title" => $question, "text" => $answer));
     }
 
     $bing_search = request_get("http://cn.bing.com/search", array("q" => $text));
@@ -41,7 +49,7 @@ if ($range == "online") {
         $title = $element->find("h2", 0)->plaintext;
         $text = $element->find("div[class=b_caption]", 0)->find("p", 0)->plaintext;
         if (strlen($title) > 0 && strlen($text) > 0) {
-            array_push($result, array("title" => $title, "text" => $text));
+            array_push($result["results"], array("title" => $title, "text" => $text));
         }
     }
 } else if ($range == "local") {
@@ -66,18 +74,17 @@ if ($range == "online") {
             $doc_text = $new_solr[0]["text"];
         }
 
-        if (preg_match("(^(Wikipedia|Portal|Template):)", $doc_title) > 0) {
+        if (preg_match("(^(Wikipedia|Portal|Template):)", $doc_title)) {
             continue;
         }
 
         array_push($processed_title, $doc_title);
-        array_push($result, process_wiki($doc_text, $doc_title));
+        array_push($result["results"], process_wiki($doc_text, $doc_title));
         if (count($result) >= ($search_title ? 5 : 10)) {
             break;
         }
     }
 }
-
 report_success($result);
 
 function get_wiki($title, $text, $rows) {
@@ -102,11 +109,14 @@ function process_wiki($text, $title = null) {
     foreach ($parse_raw["sections"] as $section) {
         $section_title = $section["title"];
         $section_text = $section["text"];
+        if (preg_match("(参考文献|外部链接)", $section_title)) {
+            continue;
+        }
         if (strlen($section_title) > 0) {
             $wiki_string .= $section_title . ":\n";
         }
         if (strlen($section_text) > 0) {
-            $wiki_string .= extract_wiki_text($section_text);
+            $wiki_string .= recursive_extract_wiki_text($section_text);
         }
         $wiki_string .= "\n";
     }
@@ -127,14 +137,11 @@ function recursive_extract_wiki_text($item) {
         }
         return $result;
     } else {
-        return extract_wiki_text($item);
+        $text = $item;
+        $text = preg_replace("(\[wiki=[a-zA-Z0-9]{32}\]|\[/wiki\])", "", $text);
+        $text = preg_replace("(\[url=.*?\]|\[/url\])", "", $text);
+        $text = preg_replace("(\[\[(Category|File|Image):.*?\]\])", "", $text);
+        $text = preg_replace("(<br />|\*)", "", $text);
+        return $text;
     }
-}
-
-function extract_wiki_text($text) {
-    $text = preg_replace("(\[wiki=[a-zA-Z0-9]{32}\]|\[/wiki\])", "", $text);
-    $text = preg_replace("(\[url=.*?\]|\[/url\])", "", $text);
-    $text = preg_replace("(\[\[(Category|File|Image):.*?\]\])", "", $text);
-    $text = preg_replace("(<br />)", "\n", $text);
-    return $text;
 }
