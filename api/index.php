@@ -26,42 +26,61 @@ if (!($range == "online" || $range == "local")) {
 
 $result = array("recommends" => array(), "results" => array());
 if ($range == "online") {
+    // 百度搜索推荐答案
     $baidu_search = request_get("http://www.baidu.com/s", array("wd" => $text));
     $html = str_get_html($baidu_search);
     $recommend_answer = $html->find("div[class=op_exactqa_s_answer]", 0)->plaintext;
-    if (strlen($recommend_answer) > 0) {
-        $recommend_answer = preg_replace("((^\s*)|(\s*$))", "", $recommend_answer);
-        array_push($result["recommends"], array("answer" => html_entity_decode($recommend_answer), "reliability" => "0.99"));
+    if (strlen($recommend_answer) == 0) {
+        $recommend_answer = $html->find("div[class=op_exactqa_detail_s_answer]", 0)->plaintext;
     }
+    add_recommend($result, $recommend_answer);
 
+    // 搜狗搜索推荐答案
     $sogou_search = request_get("https://www.sogou.com/web", array("query" => $text));
     $html = str_get_html($sogou_search);
     $answer_box = $html->find("div[class=proInfoBox]", 0);
+    if (!$answer_box) {
+        $answer_box = $html->find("div[id=kmap_preciseqa_content]", 0);
+    }
     if ($answer_box) {
         $recommend_answer = $answer_box->find("h4", 0)->plaintext;
-        if (strlen($recommend_answer) > 0) {
-            $recommend_answer = preg_replace("((^\s*)|(\s*$))", "", $recommend_answer);
-            array_push($result["recommends"], array("answer" => html_entity_decode($recommend_answer), "reliability" => "0.99"));
-        }
+        add_recommend($result, $recommend_answer);
+    }
+    $phone_table = $html->find("table[class=vr_serviceinfo]", 0)->plaintext;
+    add_recommend($result, $phone_table);
+    // 搜狗搜索
+    foreach($html->find("div[class=vrwrap]") as $element) {
+        $element_title = $element->find("h3[class=vrTitle]", 0)->plaintext;
+        $element_text = $element->find("p[class=str_info]", 0)->plaintext;
+        add_search_result($result, $element_title, $element_text);
     }
 
+    // 百度知道搜索
     $baidu_zhidao = request_get("https://zhidao.baidu.com/search", array("word" => $text));
     $html = str_get_html($baidu_zhidao);
     foreach($html->find("dl[class=dl]") as $element) {
-        $question = $element->find("dt[class=dt mb-4 line]", 0)->plaintext;
-        $answer = $element->find("dd[class=dd answer]", 0)->plaintext;
-        $answer = preg_replace("(^ 推荐答案|^答：|\[详细\] $)", "", $answer);
-        array_push($result["results"], array("title" => html_entity_decode($question), "text" => html_entity_decode($answer)));
+        $element_title = $element->find("dt[class=dt mb-4 line]", 0)->plaintext;
+        $element_text = $element->find("dd[class=dd answer]", 0)->plaintext;
+        $element_text = preg_replace("(^ 推荐答案|^答：|\[详细\] $)", "", $element_text);
+        add_search_result($result, $element_title, $element_text);
     }
 
+    // bing搜索推荐答案
     $bing_search = request_get("http://cn.bing.com/search", array("q" => $text));
     $html = str_get_html($bing_search);
-    foreach($html->find("li[class=b_algo]") as $element) {
-        $title = $element->find("h2", 0)->plaintext;
-        $text = $element->find("div[class=b_caption]", 0)->find("p", 0)->plaintext;
-        if (strlen($title) > 0 && strlen($text) > 0) {
-            array_push($result["results"], array("title" => html_entity_decode($title), "text" => html_entity_decode($text)));
+    $answer_box = $html->find("div[class=bm_box]", 0);
+    if ($answer_box) {
+        $recommend_answer = $answer_box->find("div[class=b_xlText b_emphText]", 0)->plaintext;
+        if (strlen($recommend_answer) == 0) {
+            $recommend_answer = $answer_box->find("div[class=b_secondaryFocus b_emphText]", 1)->plaintext;
         }
+        add_recommend($result, $recommend_answer);
+    }
+    // bing搜索
+    foreach($html->find("li[class=b_algo]") as $element) {
+        $element_title = $element->find("h2", 0)->plaintext;
+        $element_text = $element->find("div[class=b_caption]", 0)->find("p", 0)->plaintext;
+        add_search_result($result, $element_title, $element_text);
     }
 } else if ($range == "local") {
     $search_title = strlen($title) > 0;
@@ -97,6 +116,20 @@ if ($range == "online") {
     }
 }
 report_success($result);
+
+function add_recommend(&$result, $recommend_answer, $reliability = 0.99) {
+    if (strlen($recommend_answer) > 0) {
+        $recommend_answer = preg_replace("((^\s*)|(\s*$))", "", $recommend_answer);
+        $recommend_item = array("answer" => html_entity_decode($recommend_answer), "reliability" => $reliability);
+        array_push($result["recommends"], $recommend_item);
+    }
+}
+
+function add_search_result(&$result, $title, $text) {
+    if (strlen($title) > 0 && strlen($text) > 0) {
+        array_push($result["results"], array("title" => html_entity_decode($title), "text" => html_entity_decode($text)));
+    }
+}
 
 function get_wiki($title, $text, $rows) {
     $params = array(
