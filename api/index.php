@@ -29,11 +29,17 @@ if ($range == "online") {
     // 百度搜索推荐答案
     $baidu_search = request_get("http://www.baidu.com/s", array("wd" => $text));
     $html = str_get_html($baidu_search);
-    $recommend_answer = $html->find("div[class=op_exactqa_s_answer]", 0)->plaintext;
-    if (strlen($recommend_answer) == 0) {
-        $recommend_answer = $html->find("div[class=op_exactqa_detail_s_answer]", 0)->plaintext;
+    // eg: 世界上最高的山是什么
+    $detailed_answer = $html->find("div[class=op_exactqa_s_answer]", 0);
+    if (!$detailed_answer) {
+        // eg: 白日依山尽的下一句是什么
+        $detailed_answer = $html->find("div[class=op_exactqa_detail_s_answer]", 0);
     }
-    if (strlen($recommend_answer) == 0) {
+    if ($detailed_answer) {
+        $detailed_answer->find("span[class=op_exactqa_s_answer_property]", 0)->innertext = "";
+        $recommend_answer = $detailed_answer->plaintext;
+    } else {
+        // eg: 儿童节在哪一天
         $calendar = $html->find("div[class=op-calendar-content]", 0);
         if ($calendar) {
             $recommend_answer = $calendar->find("span", 0)->plaintext;
@@ -44,17 +50,23 @@ if ($range == "online") {
     // 搜狗搜索推荐答案
     $sogou_search = request_get("https://www.sogou.com/web", array("query" => $text));
     $html = str_get_html($sogou_search);
+    // eg: 奥巴马是哪国人
     $answer_box = $html->find("div[class=proInfoBox]", 0);
     if (!$answer_box) {
+        // eg: 白日依山尽的下一句是什么
         $answer_box = $html->find("div[id=kmap_preciseqa_content]", 0);
     }
     if ($answer_box) {
         $recommend_answer = $answer_box->find("h4", 0)->plaintext;
     } else {
+        // eg: 世界上最高的山是什么
         $answer_box = $html->find("div[class=pic-txt-box]", 0);
         if ($answer_box) {
-            $recommend_answer = $answer_box->find("p[class=txt-pstature]", 0)->plaintext;
+            $detailed_answer = $answer_box->find("p[class=txt-pstature]", 0);
+            $detailed_answer->find("span", 0)->innertext = "";
+            $recommend_answer = $detailed_answer->plaintext;
         } else {
+            // eg: 苹果公司的客服电话是什么
             $answer_box = $html->find("table[class=vr_serviceinfo]", 0);
             $recommend_answer = $answer_box->plaintext;
         }
@@ -85,14 +97,17 @@ if ($range == "online") {
     // bing搜索推荐答案
     $bing_search = request_get("http://cn.bing.com/search", array("q" => $text));
     $html = str_get_html($bing_search);
-    $answer_box = $html->find("div[class=bm_box]", 0);
-    if ($answer_box) {
-        $recommend_answer = $answer_box->find("div[class=b_xlText b_emphText]", 0)->plaintext;
+    // eg: 意大利的官方语言
+    $recommend_answer = $html->find("div[class=b_xlText b_emphText]", 0)->plaintext;
+    if (strlen($recommend_answer) == 0) {
+        // eg: 北京大学的地址在哪里
+        $recommend_answer = $html->find("div[class=b_secondaryFocus b_emphText]", 1)->plaintext;
         if (strlen($recommend_answer) == 0) {
-            $recommend_answer = $answer_box->find("div[class=b_secondaryFocus b_emphText]", 1)->plaintext;
+            // eg: 一公里等于多少米
+            $recommend_answer = $html->find("div[class=b_focusTextSmall b_emphText]", 0)->plaintext;
         }
-        add_recommend($result, $recommend_answer);
     }
+    add_recommend($result, $recommend_answer);
     // bing搜索
     foreach($html->find("li[class=b_algo]") as $element) {
         $element_title = $element->find("h2", 0)->plaintext;
