@@ -26,6 +26,7 @@ if (!($range == "online" || $range == "local")) {
 
 $result = array("recommends" => array(), "results" => array());
 if ($range == "online") {
+    $recommend_answer = null;
     // 百度搜索推荐答案
     $baidu_search = request_get("http://www.baidu.com/s", array("wd" => $text));
     $html = str_get_html($baidu_search);
@@ -40,9 +41,15 @@ if ($range == "online") {
         $recommend_answer = $detailed_answer->plaintext;
     } else {
         // eg: 儿童节在哪一天
-        $calendar = $html->find("div[class=op-calendar-content]", 0);
+        $calendar = $html->find("div[class*=op-calendar-content]", 0);
         if ($calendar) {
             $recommend_answer = $calendar->find("span", 0)->plaintext;
+        } else {
+            // eg: 北京大学的邮编是多少
+            $postcode = $html->find("div[class*=op_post_content]", 0);
+            if ($postcode) {
+                $recommend_answer = intval($postcode->find("p", 0)->plaintext);
+            }
         }
     }
     add_recommend($result, $recommend_answer);
@@ -162,11 +169,12 @@ if ($range == "online") {
 }
 report_success($result);
 
-function add_recommend(&$result, $recommend_answer, $reliability = 0.99) {
+function add_recommend(&$result, &$recommend_answer, $reliability = 0.99) {
     if (strlen($recommend_answer) > 0) {
         $recommend_answer = preg_replace("((^\s*)|(\s*$))", "", $recommend_answer);
         $recommend_item = array("answer" => html_entity_decode($recommend_answer), "reliability" => $reliability);
         array_push($result["recommends"], $recommend_item);
+        $recommend_answer = null;
     }
 }
 
