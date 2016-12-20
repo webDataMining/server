@@ -33,6 +33,12 @@ if ($range == "online") {
     if (strlen($recommend_answer) == 0) {
         $recommend_answer = $html->find("div[class=op_exactqa_detail_s_answer]", 0)->plaintext;
     }
+    if (strlen($recommend_answer) == 0) {
+        $calendar = $html->find("div[class=op-calendar-content]", 0);
+        if ($calendar) {
+            $recommend_answer = $calendar->find("span", 0)->plaintext;
+        }
+    }
     add_recommend($result, $recommend_answer);
 
     // 搜狗搜索推荐答案
@@ -44,11 +50,22 @@ if ($range == "online") {
     }
     if ($answer_box) {
         $recommend_answer = $answer_box->find("h4", 0)->plaintext;
-        add_recommend($result, $recommend_answer);
+    } else {
+        $answer_box = $html->find("div[class=pic-txt-box]", 0);
+        if ($answer_box) {
+            $recommend_answer = $answer_box->find("p[class=txt-pstature]", 0)->plaintext;
+        } else {
+            $answer_box = $html->find("table[class=vr_serviceinfo]", 0);
+            $recommend_answer = $answer_box->plaintext;
+        }
     }
-    $phone_table = $html->find("table[class=vr_serviceinfo]", 0)->plaintext;
-    add_recommend($result, $phone_table);
+    add_recommend($result, $recommend_answer);
     // 搜狗搜索
+    foreach($html->find("div[class=rb]") as $element) {
+        $element_title = $element->find("h3[class=pt]", 0)->plaintext;
+        $element_text = $element->find("div[class=ft]", 0)->plaintext;
+        add_search_result($result, $element_title, $element_text);
+    }
     foreach($html->find("div[class=vrwrap]") as $element) {
         $element_title = $element->find("h3[class=vrTitle]", 0)->plaintext;
         $element_text = $element->find("p[class=str_info]", 0)->plaintext;
