@@ -124,6 +124,9 @@ if ($range == "online") {
         if (preg_match("((?i)^(wikipedia|portal|template|category):)", $doc_title)) {
             continue;
         }
+        if (preg_match("(\(消歧义\)$)", $doc_title)) {
+            continue;
+        }
 
         $processed_title[$doc_title] = true;
         array_push($result["results"], process_wiki($doc_text, $doc_title));
