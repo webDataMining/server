@@ -84,7 +84,7 @@ function request_get($baseurl, $get = null) {
     $raw_str = file_get_contents($url, false, stream_context_create($options));
     $encoding = mb_detect_encoding($raw_str, array('ASCII', 'UTF-8', 'GB2312', 'GBK'));
     if ($encoding != "UTF-8") {
-        $raw_str = iconv($encoding, "UTF-8", $raw_str);
+        $raw_str = iconv($encoding, "UTF-8//IGNORE", $raw_str);
     }
     return $raw_str;
 }

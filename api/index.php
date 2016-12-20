@@ -68,7 +68,17 @@ if ($range == "online") {
         } else {
             // eg: 苹果公司的客服电话是什么
             $answer_box = $html->find("table[class=vr_serviceinfo]", 0);
-            $recommend_answer = $answer_box->plaintext;
+            if ($answer_box) {
+                $recommend_answer = $answer_box->plaintext;
+            } else {
+                // eg: 冬泳下水之前饮用白酒可以御寒吗
+                $answer_box = $html->find("div[id=lizhi_mutex_wrapper]", 0);
+                if ($answer_box) {
+                    $answer_title = $answer_box->find("li[class=tab-resize cur]", 0);
+                    $answer_title->find("span", 0)->innertext = "";
+                    $recommend_answer = $answer_title->plaintext;
+                }
+            }
         }
     }
     add_recommend($result, $recommend_answer);
