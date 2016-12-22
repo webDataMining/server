@@ -66,12 +66,20 @@ if ($range == "online") {
     if ($answer_box) {
         $recommend_answer = $answer_box->find("h4", 0)->plaintext;
     } else {
-        // eg: 世界上最高的山是什么
         $answer_box = $html->find("div[class=pic-txt-box]", 0);
         if ($answer_box) {
+            // eg: 世界上最高的山是什么
             $detailed_answer = $answer_box->find("p[class=txt-pstature]", 0);
-            $detailed_answer->find("span", 0)->innertext = "";
-            $recommend_answer = $detailed_answer->plaintext;
+            if ($detailed_answer) {
+                $detailed_answer->find("span", 0)->innertext = "";
+                $recommend_answer = $detailed_answer->plaintext;
+            } else {
+                // eg: 哪个海峡沟通了北冰洋与太平洋
+                $detailed_answer = $answer_box->find("div[class=txt-box]", 0);
+                if ($detailed_answer) {
+                    $recommend_answer = $detailed_answer->find("h4", 0)->plaintext;
+                }
+            }
         } else {
             // eg: 苹果公司的客服电话是什么
             $answer_box = $html->find("table[class=vr_serviceinfo]", 0);
