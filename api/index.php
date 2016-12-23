@@ -118,16 +118,11 @@ if ($range == "online") {
     // 百度知道搜索
     $baidu_zhidao = request_get("https://zhidao.baidu.com/search", array("word" => $text));
     $html = str_get_html($baidu_zhidao);
-    $find = false;
     foreach($html->find("dl[class=dl]") as $element) {
         $element_title = $element->find("dt[class=dt mb-4 line]", 0)->plaintext;
         $element_text = $element->find("dd[class=dd answer]", 0)->plaintext;
         $element_text = preg_replace("(^ 推荐答案|^答：|\[详细\] $)", "", $element_text);
         add_search_result($result, $element_title, $element_text);
-        $find = true;
-    }
-    if (!$find) {
-        array_push($result["warnings"], "百度知道无结果");
     }
 
     // bing搜索推荐答案
