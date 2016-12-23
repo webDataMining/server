@@ -24,7 +24,7 @@ if (!($range == "online" || $range == "local")) {
     report_error(ERROR_ILLEGAL_PARAMETER);
 }
 
-$result = array("recommends" => array(), "results" => array());
+$result = array("recommends" => array(), "results" => array(), "warnings" => array());
 if ($range == "online") {
     $recommend_answer = null;
     // 百度搜索推荐答案
@@ -98,25 +98,36 @@ if ($range == "online") {
     }
     add_recommend($result, $recommend_answer);
     // 搜狗搜索
+    $find = false;
     foreach($html->find("div[class=rb]") as $element) {
         $element_title = $element->find("h3[class=pt]", 0)->plaintext;
         $element_text = $element->find("div[class=ft]", 0)->plaintext;
         add_search_result($result, $element_title, $element_text);
+        $find = true;
     }
     foreach($html->find("div[class=vrwrap]") as $element) {
         $element_title = $element->find("h3[class=vrTitle]", 0)->plaintext;
         $element_text = $element->find("p[class=str_info]", 0)->plaintext;
         add_search_result($result, $element_title, $element_text);
+        $find = true;
+    }
+    if (!$find) {
+        array_push($result["warnings"], "搜狗搜索无结果");
     }
 
     // 百度知道搜索
     $baidu_zhidao = request_get("https://zhidao.baidu.com/search", array("word" => $text));
     $html = str_get_html($baidu_zhidao);
+    $find = false;
     foreach($html->find("dl[class=dl]") as $element) {
         $element_title = $element->find("dt[class=dt mb-4 line]", 0)->plaintext;
         $element_text = $element->find("dd[class=dd answer]", 0)->plaintext;
         $element_text = preg_replace("(^ 推荐答案|^答：|\[详细\] $)", "", $element_text);
         add_search_result($result, $element_title, $element_text);
+        $find = true;
+    }
+    if (!$find) {
+        array_push($result["warnings"], "百度知道无结果");
     }
 
     // bing搜索推荐答案
@@ -134,10 +145,15 @@ if ($range == "online") {
     }
     add_recommend($result, $recommend_answer);
     // bing搜索
+    $find = false;
     foreach($html->find("li[class=b_algo]") as $element) {
         $element_title = $element->find("h2", 0)->plaintext;
         $element_text = $element->find("div[class=b_caption]", 0)->find("p", 0)->plaintext;
         add_search_result($result, $element_title, $element_text);
+        $find = true;
+    }
+    if (!$find) {
+        array_push($result["warnings"], "bing搜索无结果");
     }
 } else if ($range == "local") {
     $search_title = strlen($title) > 0;
