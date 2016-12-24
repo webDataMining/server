@@ -136,6 +136,13 @@ if ($range == "online") {
         if (strlen($recommend_answer) == 0) {
             // eg: 一公里等于多少米
             $recommend_answer = $html->find("div[class=b_focusTextSmall b_emphText]", 0)->plaintext;
+            if (strlen($recommend_answer) == 0) {
+                // eg: 9的立方是多少
+                $calculator = $html->find("div[id=rcCalB]", 0);
+                if ($calculator) {
+                    $recommend_answer = $calculator->find("span[id=rcTB]", 0)->plaintext;
+                }
+            }
         }
     }
     add_recommend($result, $recommend_answer);
